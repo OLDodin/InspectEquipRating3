@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<UIAddon>
+  <AutoStart>true</AutoStart>
+  <Forms>
+    <Item>
+      <Form href="Widgets/MainForm.(WidgetForm).xdb#xpointer(/WidgetForm)"/>
+      <Id>MainForm</Id>
+    </Item>
+	<Item>
+		<Id>Template</Id>
+		<Form href="Widgets/Main.xdb#xpointer(/WidgetForm)"/>
+	</Item>
+  </Forms>
+  <MainFormId>MainForm</MainFormId>
+  <Name>InspectEquipRating3</Name>
+  <localizedNameFileRef href="name.txt"/>
+  <localizedDescFileRef href="desc.txt"/>
+  <ScriptFileRefs>
+    <Item href="Libs/SampleAddonBase.lua"/>
+	<Item href="Libs/LibDnD.lua"/>
+	<Item href="Libs/LibGS.lua"/>
+	<Item href="Scripts/Utils.lua"/>
+	<Item href="Scripts/InspectEquipRating.lua"/>
+  </ScriptFileRefs>
+  <author>OLDodin</author>
+<addon_name>InspectEquipRating3</addon_name></UIAddon>

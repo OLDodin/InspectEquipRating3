@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<WidgetForm>
+	<Children>
+		<Item href="TextView.xdb#xpointer(/WidgetTextView)" />
+	</Children>
+	<PickChildrenOnly>true</PickChildrenOnly>
+</WidgetForm>
