@@ -2,6 +2,7 @@
 <WidgetForm>
 	<Children>
 		<Item href="TextView.xdb#xpointer(/WidgetTextView)" />
+		<Item href="Timer.xdb#xpointer(/WidgetPanel)" />
 	</Children>
 	<PickChildrenOnly>true</PickChildrenOnly>
 </WidgetForm>
