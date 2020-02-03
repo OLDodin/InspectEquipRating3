@@ -4,6 +4,7 @@ local m_runeTxtWidget = nil
 local m_gsTxtWidget = nil
 local m_fairyTxtWidget = nil
 local m_exoTxtWidget = nil
+local m_artTxtWidget = nil
 
 local m_currMountHP = -1
 
@@ -46,6 +47,9 @@ function ShowGearScore(aParams)
 		txt = CreateValuedText(tostring(math.floor(aParams.gearscore)), "", "", aParams.gearscoreStyle, "", "")
 		m_gsTxtWidget:SetValuedText(txt)
 		
+		txt = CreateValuedText(RuneToTxt(aParams.artefactQuality), "", "", 'Legendary', "", "")
+		m_artTxtWidget:SetValuedText(txt)
+		
 		show(mainForm)
 	end
 end
@@ -82,9 +86,10 @@ function Init()
 	DnD:Init(m_myMainForm, m_myMainForm, true)
 	
 	m_runeTxtWidget = createWidget(m_myMainForm, "runeHeader", "TextView", nil, nil, 66, 25, 0, 9)
-	m_gsTxtWidget = createWidget(m_myMainForm, "runeHeader", "TextView", nil, nil, 70, 25, 70, 9)
+	m_gsTxtWidget = createWidget(m_myMainForm, "runeHeader", "TextView", nil, nil, 70, 25, 92, 9)
 	m_fairyTxtWidget = createWidget(m_myMainForm, "runeHeader", "TextView", nil, nil, 134, 25, 0, 9)
-	m_exoTxtWidget = createWidget(m_myMainForm, "runeHeader", "TextView", nil, nil, 70, 25, 125, 9)
+	m_exoTxtWidget = createWidget(m_myMainForm, "runeHeader", "TextView", nil, nil, 70, 25, 145, 9)
+	m_artTxtWidget = createWidget(m_myMainForm, "artHeader", "TextView", nil, nil, 20, 25, 80, 9)
 	
 	hide(mainForm)
 	

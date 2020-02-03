@@ -439,6 +439,26 @@ local function GetFairy( unitId, result )
 	result.fairyScoreHeal = exists and info.healBonus and ((info.healBonus-1)*100) or 0
 	result.fairyStyle = QualityStyle[ rank + 1 ]
 end
+local function GetArtifacts( unitId, result )
+	if not guildHallLib then -- less AO 11.0.??
+		result.artefactQuality = 0
+		return
+	end
+	local artifactsArr = {}
+	local equip = unit.GetEquipmentItemIds( unitId, ITEM_CONT_EQUIPMENT ) or {}
+	for slot,item in pairs( equip ) do
+		local info = GetItemInfo( item )
+		if info.dressSlot == DRESS_SLOT_ARTIFACT then
+			table.insert(artifactsArr, info.level)
+		end
+	end
+	local artSumm = 0
+	for _,artLvl in pairs(artifactsArr) do
+		artSumm = artSumm + artLvl
+	end
+	
+	result.artefactQuality = artSumm / 3
+end
 local function GetFullInfo( unitId, info )
 	info = info or avatar.GetInspectInfo()
 	local result = {}
@@ -460,6 +480,7 @@ local function GetFullInfo( unitId, info )
 		if not common.IsOnPayToPlayShard or not common.IsOnPayToPlayShard() then
 			GetRunes( unitId, result )
 		end
+		GetArtifacts( unitId, result )
 	end
 	GetFairy( unitId, result )
 	return result

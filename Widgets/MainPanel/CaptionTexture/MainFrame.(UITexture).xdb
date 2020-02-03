@@ -6,16 +6,16 @@
 	<type>DXT5</type>
 	<width>256</width>
 	<height>64</height>
-	<realWidth>200</realWidth>
+	<realWidth>220</realWidth>
 	<realHeight>35</realHeight>
 	<disableLODControl>false</disableLODControl>
 	<alphaTex>true</alphaTex>
-	<binaryFileSize>2597</binaryFileSize>
+	<binaryFileSize>2706</binaryFileSize>
 	<binaryFile href="MainFrame.(UITexture).bin" />
 	<binaryFileSize2>0</binaryFileSize2>
 	<binaryFile2 href="" />
 	<sourceFile href="MainFrame.tga" />
-	<sourceFileCRC>-161719055</sourceFileCRC>
+	<sourceFileCRC>-2078475597</sourceFileCRC>
 	<wrap>false</wrap>
 	<LocalizationInfo />
 	<atlasPart>true</atlasPart>
