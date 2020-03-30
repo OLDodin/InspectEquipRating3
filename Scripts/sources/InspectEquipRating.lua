@@ -20,14 +20,17 @@ function CreateValuedText(aText1, aText2, aText3, aStyle1, aStyle2, aStyle3)
 	local valuedText=common.CreateValuedText()
 	valuedText:SetFormat(toWString(formatStr))
 	
-	valuedText:SetClassVal( "style1", aStyle1 )
-	valuedText:SetClassVal( "style2", aStyle2 )
-	valuedText:SetClassVal( "style3", aStyle3 )
+	valuedText:SetClassVal( "style1", aStyle1 or "" )
+	valuedText:SetClassVal( "style2", aStyle2 or "" )
+	valuedText:SetClassVal( "style3", aStyle3 or "" )
 	
 	return valuedText
 end
 
 function RuneToTxt(aRuneVal)
+	if aRuneVal == nil then 
+		aRuneVal = 0 
+	end
 	local num1, num2 = math.modf(aRuneVal)
 	local runeTxt = tostring(num1)
 	if num2 ~= 0 then 
