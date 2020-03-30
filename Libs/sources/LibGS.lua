@@ -179,7 +179,7 @@ local GS_Addons
 local GS_AddonsN
 local GS_AddonParams
 local GS_MyId
-local GS_MyVersion = 8
+local GS_MyVersion = 9
 local GS_Id_Master
 local GS_Is_Master
 -- Functions
