@@ -98,8 +98,7 @@ function Init()
 	
 	common.RegisterEventHandler( OnTargetChaged, "EVENT_AVATAR_TARGET_CHANGED")
 	common.RegisterEventHandler( ShowGearScore, "LIBGS_GEARSCORE_AVAILABLE")
-	startTimer("updateTimer", "EVENT_UPDATE_TIMER", 0.1)
-	common.RegisterEventHandler(Update, "EVENT_UPDATE_TIMER")
+	startTimer("updateTimer", Update, 0.1)
 	
 	GS.Callback = ShowGearScore
 	GS.EnableTargetInspection( true )
