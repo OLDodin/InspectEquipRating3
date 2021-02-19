@@ -50,7 +50,7 @@ function ShowGearScore(aParams)
 		txt = CreateValuedText(tostring(math.floor(aParams.gearscore)), "", "", aParams.gearscoreStyle, "", "")
 		m_gsTxtWidget:SetValuedText(txt)
 		
-		txt = CreateValuedText(RuneToTxt(aParams.artefactQuality), "", "", 'Legendary', "", "")
+		txt = CreateValuedText(aParams.artefactLvl1.." "..aParams.artefactLvl2.." "..aParams.artefactLvl3, "", "", 'Legendary', "", "")		
 		m_artTxtWidget:SetValuedText(txt)
 		
 		show(mainForm)
@@ -70,10 +70,11 @@ function Update()
 	local mountMaxHealth = 0
 	if mountInfo then
 		mountMaxHealth = mountInfo.healthLimit
+		mountMaxHealth = math.floor(mountMaxHealth / 1000)
 	end
 	if m_currMountHP ~= mountMaxHealth then
 		local mountStyle = 'Junk'
-		local txt = CreateValuedText(tostring(mountMaxHealth), "", "", mountStyle, "", "")
+		local txt = CreateValuedText(tostring(mountMaxHealth).."K", "", "", mountStyle, "", "")
 		m_exoTxtWidget:SetValuedText(txt)
 	end
 	m_currMountHP = mountMaxHealth
@@ -89,19 +90,20 @@ function Init()
 	DnD:Init(m_myMainForm, m_myMainForm, true)
 	
 	m_runeTxtWidget = createWidget(m_myMainForm, "runeHeader", "TextView", nil, nil, 66, 25, 0, 9)
-	m_gsTxtWidget = createWidget(m_myMainForm, "runeHeader", "TextView", nil, nil, 70, 25, 92, 9)
+	m_gsTxtWidget = createWidget(m_myMainForm, "runeHeader", "TextView", nil, nil, 70, 25, 115, 9)
 	m_fairyTxtWidget = createWidget(m_myMainForm, "runeHeader", "TextView", nil, nil, 134, 25, 0, 9)
-	m_exoTxtWidget = createWidget(m_myMainForm, "runeHeader", "TextView", nil, nil, 70, 25, 145, 9)
-	m_artTxtWidget = createWidget(m_myMainForm, "artHeader", "TextView", nil, nil, 20, 25, 80, 9)
+	m_exoTxtWidget = createWidget(m_myMainForm, "runeHeader", "TextView", nil, nil, 70, 25, 158, 9)
+	m_artTxtWidget = createWidget(m_myMainForm, "artHeader", "TextView", nil, nil, 70, 25, 70, 9)
 	
 	hide(mainForm)
 	
 	common.RegisterEventHandler( OnTargetChaged, "EVENT_AVATAR_TARGET_CHANGED")
 	common.RegisterEventHandler( ShowGearScore, "LIBGS_GEARSCORE_AVAILABLE")
-	startTimer("updateTimer", Update, 0.1)
+	startTimer("updateTimer", Update, 0.2)
 	
 	GS.Callback = ShowGearScore
 	GS.EnableTargetInspection( true )
+	GS.EnableLiteMode( true )
 end
 
 if (avatar.IsExist()) then

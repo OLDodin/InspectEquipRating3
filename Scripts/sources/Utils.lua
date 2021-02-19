@@ -404,5 +404,9 @@ function destroyTimer(name)
 	timers[name]=nil
 end
 
+function getTimestamp()
+	return common.GetMsFromDateTime( common.GetLocalDateTime() )
+end
+
 
 
