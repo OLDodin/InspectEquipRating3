@@ -15,8 +15,16 @@ function OnTargetChaged(params)
 	end
 end
 
+function ToStringConv(aText)
+	if not aText then return nil end
+	if common.IsWString(aText) then
+		aText = userMods.FromWString(aText)
+	end
+	return tostring(aText)
+end
+
 function CreateValuedText(aText1, aText2, aText3, aStyle1, aStyle2, aStyle3)
-	local formatStr = "<body fontname='AllodsWest' alignx = 'center' fontsize='14'><rs class='style1'>"..(toString(aText1) or "").."</rs><rs class='style2'>"..(toString(aText2) or "").."</rs><rs class='style3'>"..(toString(aText3) or "").."</rs></body>"
+	local formatStr = "<body fontname='AllodsWest' alignx = 'center' fontsize='14'><rs class='style1'>"..(ToStringConv(aText1) or "").."</rs><rs class='style2'>"..(ToStringConv(aText2) or "").."</rs><rs class='style3'>"..(ToStringConv(aText3) or "").."</rs></body>"
 	local valuedText=common.CreateValuedText()
 	valuedText:SetFormat(toWString(formatStr))
 	
@@ -83,8 +91,7 @@ end
 function Init()
 	--common.StateUnloadManagedAddon( "InspectCharacter" )	
 	if GS.Init then GS.Init() end
-	
-	m_template = createWidget(nil, "Template", "Template")
+	local m_template = getChild(mainForm, "Template")
 	setTemplateWidget(m_template)
 	m_myMainForm =  mainForm:GetChildChecked("MainPanel", false)
 	DnD:Init(m_myMainForm, m_myMainForm, true)
