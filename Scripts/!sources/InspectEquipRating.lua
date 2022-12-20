@@ -91,7 +91,7 @@ end
 function Init()
 	--common.StateUnloadManagedAddon( "InspectCharacter" )	
 	if GS.Init then GS.Init() end
-	local m_template = getChild(mainForm, "Template")
+	m_template = getChild(mainForm, "Template")
 	setTemplateWidget(m_template)
 	m_myMainForm =  mainForm:GetChildChecked("MainPanel", false)
 	DnD:Init(m_myMainForm, m_myMainForm, true)
