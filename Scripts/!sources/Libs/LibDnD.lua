@@ -5,9 +5,8 @@
 -- https://alloder.pro/topic/260-how-to-libdndlua-biblioteka-dragdrop/
 --------------------------------------------------------------------------------
 Global( "DnD", {} )
-
 -- PUBLIC FUNCTIONS --
-function DnD.Init( wtMovable, wtReacting, fUseCfg, fLockedToParentArea, Padding, KbFlag, Cursor, oldParam1, oldParam2 )
+DnD.Init = function( wtMovable, wtReacting, fUseCfg, fLockedToParentArea, Padding, KbFlag, Cursor, oldParam1, oldParam2 )
 	if wtMovable == DnD then
 		wtMovable, wtReacting, fUseCfg, fLockedToParentArea, Padding, KbFlag, Cursor, oldParam1 =
 		           wtReacting, fUseCfg, fLockedToParentArea, Padding, KbFlag, Cursor, oldParam1, oldParam2
@@ -55,18 +54,15 @@ function DnD.Init( wtMovable, wtReacting, fUseCfg, fLockedToParentArea, Padding,
 			InitialPlace.posY = Cfg.posY or InitialPlace.posY
 			InitialPlace.highPosX = Cfg.highPosX or InitialPlace.highPosX
 			InitialPlace.highPosY = Cfg.highPosY or InitialPlace.highPosY
-			DnD.Widgets[ ID ].wtMovable:SetPlacementPlain( DnD.NormalizePlacement( InitialPlace, LimitMin, LimitMax ) )
+			if DnD.Widgets[ ID ].fLockedToParentArea then
+				DnD.Widgets[ ID ].wtMovable:SetPlacementPlain( DnD.NormalizePlacement( InitialPlace, LimitMin, LimitMax ) )
+			else
+				DnD.Widgets[ ID ].wtMovable:SetPlacementPlain( InitialPlace )
+			end
 		end
 	end
 	DnD.Widgets[ ID ].Initial = { X = InitialPlace.posX, Y = InitialPlace.posY, HX = InitialPlace.highPosX, HY = InitialPlace.highPosY }
-	local mt = getmetatable( wtReacting )
-	if not mt._Show then
-		mt._Show = mt.Show
-		mt.Show = function ( self, show )
-			self:_Show( show ); 
-			if self:IsValid() then DnD.Register( self, show ) end
-		end
-	end
+	
 	DnD.Register( wtReacting, true )
 end
 function DnD.Remove( wtWidget, oldParam1 )
@@ -216,14 +212,7 @@ end
 -----------------------------------------------------------------------------------------------------------
 function DnD.OnPickAttempt( params )
 	local Picking = params.srcId
-	
-	if DnD.Widgets[ Picking ] and DnD.Widgets[ Picking ].Enabled 
-	and ( 
-	not DnD.Widgets[ Picking ].KbFlag 
-	or DnD.Widgets[ Picking ].KbFlag == KBF_NONE 
-	and params.kbFlags == KBF_NONE 
-	or (common.GetBitAnd and common.GetBitAnd( params.kbFlags, DnD.Widgets[ Picking ].KbFlag ) ~= 0  or bit.band( params.kbFlags, DnD.Widgets[ Picking ].KbFlag ) ~= 0)
-	) then
+	if DnD.Widgets[ Picking ] and DnD.Widgets[ Picking ].Enabled and ( not DnD.Widgets[ Picking ].KbFlag or DnD.Widgets[ Picking ].KbFlag == KBF_NONE and params.kbFlags == KBF_NONE or common.GetBitAnd( params.kbFlags, DnD.Widgets[ Picking ].KbFlag ) ~= 0 ) then
 		DnD.Place = DnD.Widgets[ Picking ].wtMovable:GetPlacementPlain()
 		DnD.Reset = DnD.Widgets[ Picking ].wtMovable:GetPlacementPlain()
 		DnD.Cursor = { X = params.posX , Y = params.posY }
@@ -303,4 +292,21 @@ function DnD.OnResolutionChanged()
 			W.wtMovable:SetPlacementPlain( DnD.NormalizePlacement( InitialPlace, LimitMin, LimitMax ) )
 		end
 	end
+end
+DnD.SwapWdg = function(aWdg)
+	if aWdg:IsVisible() then
+		DnD.HideWdg(aWdg)
+	else
+		DnD.ShowWdg(aWdg)
+	end
+end
+
+DnD.ShowWdg = function(aWdg)
+	aWdg:Show(true)
+	DnD.Register(aWdg, true)
+end
+
+DnD.HideWdg = function(aWdg)
+	aWdg:Show(false)
+	DnD.Register(aWdg, false)
 end
