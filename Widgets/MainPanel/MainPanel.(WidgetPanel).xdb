@@ -2,7 +2,7 @@
 <WidgetPanel>
 	<Name>MainPanel</Name>
 	<Priority>0</Priority>
-	<BackLayer href="CaptionTexture/MainFrame.(WidgetLayerTiledTexture).xdb#xpointer(/WidgetLayerTiledTexture)" />
+	<BackLayer href="CaptionTexture/MainFrame.(WidgetLayerSimpleTexture).xdb" />
 	<Placement>
 		<X>
 			<Align>WIDGET_ALIGN_LOW</Align>
