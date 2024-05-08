@@ -1,7 +1,7 @@
 --------------------------------------------------------------------------------
 -- LibGS.lua // "Gear Score Library" by hal.dll, version 2017-04-21
 -- Created: 2014-08-25
--- Updated: 2017-04-21
+-- Updated: 2024-05-05 by oldodin
 -- Support: https://alloder.pro/topic/1718-libgslua-biblioteka-inspektirovaniya-igrokov/
 --------------------------------------------------------------------------------
 -- PUBLIC VARIABLES
@@ -114,11 +114,15 @@ local equipmentType = {
 	[ DRESS_SLOT_PANTS ]       = Clothing, -- [2]
 	[ DRESS_SLOT_BOOTS ]       = Clothing, -- [3]
 	-- right side
+	[ DRESS_SLOT_EARRING1 ]    = Clothing, -- [10]
+	[ DRESS_SLOT_EARRING2 ]    = Clothing, -- [26]
 	[ DRESS_SLOT_EARRINGS ]    = Clothing, -- [41] = [10] & [26]
 	[ DRESS_SLOT_NECKLACE ]    = Clothing, -- [11]
 	[ DRESS_SLOT_SHIRT ]       = Clothing, -- [13]
 	[ DRESS_SLOT_BRACERS ]     = Clothing, -- [6]
 	[ DRESS_SLOT_RING ]        = Clothing, -- [40] = [8] & [9]
+	[ DRESS_SLOT_RING1 ]       = Clothing, -- [8]
+	[ DRESS_SLOT_RING2 ]       = Clothing, -- [9]
 	-- weapon
 	[ DRESS_SLOT_RANGED ]      = Weapon, -- [16] -- Спец. Оружие
 	[ DRESS_SLOT_TWOHANDED ]   = Weapon, -- [38] = [14] -- Двуручка
@@ -202,6 +206,47 @@ local GetGearScore
 --------------------------------------------------------------------------------
 local function safe_div( S , N )
 	return N > 0 and S / N or 0
+end
+local function GetGearScoreV13( unitId, result )
+	local Qs = 0
+	local Qn = 0
+	local Ls = 0
+	local N = 0
+	if not GS_LiteMod then
+		local equip = unit.GetEquipmentItemIds( unitId, ITEM_CONT_EQUIPMENT ) or {}
+		for slot,item in pairs( equip ) do
+			local t = equipmentType[slot]
+			if t then
+				local info = GetItemInfo( item )
+				local quality = GetItemQuality( item )
+
+				Ls = Ls + info.level
+				N = N + 1
+
+				if quality and quality.quality then 
+					Qs = Qs + equipmentQuality[quality.quality]
+					Qn = Qn + 1
+				end
+			end
+		end
+	end
+	if unitId == avatar.GetId() then
+		local gs = avatar.GetGearScoreInfo()
+		result.gearscore = gs and gs.currentValue or 0
+	else
+		result.gearscore = unit.GetGearScore( unitId )
+	end
+	result.equipmentLevel = safe_div( Ls , N )
+	result.equipmentQuality = safe_div( Qs , Qn )
+	result.equipmentStyle = QualityStyle[ math.floor(result.equipmentQuality + 0.3) ]
+	local q = result.equipmentQuality
+	result.gearscoreLevel = result.equipmentLevel
+	result.gearscoreQuality = q < 1 and 1 or q > 8 and 8 or q
+	if not GS_LiteMod then
+		result.gearscoreStyle = QualityStyle[ math.floor(result.gearscoreQuality + 0.3) ]
+	else
+		result.gearscoreStyle = 'Goods'
+	end
 end
 local function GetGearScoreV12( unitId, result )
 	local Qs = 0
@@ -861,8 +906,9 @@ end
 function GS.Init( EnableTargetAutoInspection, SkipInitialTargetInspection )
 	if not GS.Init then return end
 	GS.Init = nil
+	
 	if avatar.GetGearScoreInfo then -- AO 7.0.??+
-		GetGearScore = GetGearScoreV12
+		GetGearScore = GetGearScoreV13
 	elseif unit.GetGearScore then -- AO 6.0.00+
 		GetGearScore = GetGearScoreV6
 	elseif avatar.GetPower then -- AO 5.0.00+
@@ -878,6 +924,7 @@ function GS.Init( EnableTargetAutoInspection, SkipInitialTargetInspection )
 	GetGearScoreV6 = nil
 	GetGearScoreV7 = nil
 	GetGearScoreV12 = nil
+	GetGearScoreV13 = nil
 	local haveItemLib = rawget( _G, "itemLib" ) ~= nil
 	GetItemInfo = haveItemLib and itemLib.GetItemInfo or avatar.GetItemInfo
 	GetItemBonus = haveItemLib and itemLib.GetBonus or avatar.GetItemBonus

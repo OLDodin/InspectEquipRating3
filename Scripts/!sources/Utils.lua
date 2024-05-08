@@ -415,22 +415,19 @@ local m_loopEffects={}
 
 function timer(params)
 	if not params.effectType == ET_FADE then return end
-	local name=nil
-	for i, j in pairs(timers) do
-		if j and equals(params.wtOwner, j.widget) then
-			name=i
+	local timerForTick = nil
+	for _, someTimer in pairs(timers) do
+		if params.wtOwner:IsEqual(someTimer.widget) then
+			timerForTick = someTimer
+			break
 		end
 	end
-	if not name then return end
+	if not timerForTick then return end
 
-
-	if timers[name] then
-		if timers[name].widget and not timers[name].one then
-			timers[name].widget:PlayFadeEffect( 1.0, 1.0, timers[name].speed*1000, EA_MONOTONOUS_INCREASE, true)
-		end
-		--userMods.SendEvent( timers[name].event, {sender = common.GetAddonName()} )
-		timers[name].callback()
+	if not timerForTick.one then
+		timerForTick.widget:PlayFadeEffect( 1.0, 1.0, timerForTick.speed*1000, EA_MONOTONOUS_INCREASE, true)
 	end
+	timerForTick.callback()
 end
 
 function startTimer(name, callback, speed, one)

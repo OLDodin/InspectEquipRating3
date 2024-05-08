@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<UIRelatedTextures>
+	<Items>
+		<Item>
+			<name>MainFrame2</name>
+			<textureItem href="MainFrame.(UISingleTexture).xdb" />
+		</Item>
+	</Items>
+</UIRelatedTextures>

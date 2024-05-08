@@ -12,5 +12,11 @@
 	<Item href="Scripts/Libs/LibGS.lua"/>
 	<Item href="Scripts/InspectEquipRating.lua"/>
   </ScriptFileRefs>
+  <texturesGroups>
+		<Item>
+			<groupName>common</groupName>
+			<textures href="Widgets/Textures/Textures.xdb"/>
+		</Item>
+  </texturesGroups>
   <author>OLDodin</author>
 <addon_name>InspectEquipRating3</addon_name></UIAddon>
