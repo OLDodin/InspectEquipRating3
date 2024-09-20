@@ -1,8 +1,11 @@
 local cachedToWString = userMods.ToWString
 local cachedFromWString = userMods.FromWString
-local cachedIsWString = common.IsWString
 local cachedIsExist = object.IsExist
 local cachedIsUnit = object.IsUnit
+local cachedCreateValuedText = common.CreateValuedText
+
+local cachedTimeAbbr = {}
+
 --------------------------------------------------------------------------------
 -- Integer functions
 --------------------------------------------------------------------------------
@@ -29,7 +32,7 @@ end
 
 function toWString(text)
 	if not text then return nil end
-	if not cachedIsWString(text) then
+	if apitype(text) ~= "WString" then
 		text=cachedToWString(tostring(text))
 	end
 	return text
@@ -37,7 +40,7 @@ end
 
 local function toStringUtils(text)
 	if not text then return nil end
-	if cachedIsWString(text) then
+	if apitype(text) == "WString" then
 		text=cachedFromWString(text)
 	end
 	return tostring(text)
@@ -62,6 +65,16 @@ function toLowerWString(text)
 	end
 	text=string.lower(text)
 	return toWString(text)
+end
+
+function splitString(text, delimeter)
+	text=toLowerString(text)
+	local regxEverythingExceptDelimeter = '([^'..delimeter..']+)'
+	local res = {}
+	for x in string.gmatch(text, regxEverythingExceptDelimeter) do
+		table.insert(res, x)
+	end
+	return res
 end
 
 function find(text, word)
@@ -100,6 +113,19 @@ function ConcatWString(...)
 	return wStr
 end 
 
+
+local m_valuedText = cachedCreateValuedText()
+m_valuedText:SetFormat(toWString('<header><r name="text_label"/></header>'))
+local m_htmlWstr = userMods.ToWString("<html>")
+
+function removeHtmlFromWString(text)
+	if text:IsContain(m_htmlWstr) then
+		m_valuedText:SetVal("text_label", text)
+		return m_valuedText:ToWString()
+	end
+	return text
+end
+
 function LogAllCSSStyle()
 	local listCSS = common.GetCSSList()
 	for i = 0, GetTableSize(listCSS) do
@@ -109,18 +135,23 @@ function LogAllCSSStyle()
 	end
 end
 
+
 function formatText(text, align, fontSize, shadow, outline, fontName)
-	local firstPart = "<body fontname='"..(toStringUtils(fontName) or "AllodsWest").."' alignx = '"..(toStringUtils(align) or "left").."' fontsize='"..(toStringUtils(fontSize) or "14").."' shadow='"..(toStringUtils(shadow) or "0").."' outline='"..(toStringUtils(outline) or "1").."'><rs class='color'>"
+	local firstPart = "<body fontname='"..(toStringUtils(fontName) or "AllodsFantasy")
+					.."' alignx = '"..(align or "left")
+					.."' fontsize='"..(fontSize and tostring(fontSize) or "14")
+					.."' shadow='"..(shadow and tostring(shadow) or "0")
+					.."' outline='"..(outline and tostring(outline) or "1")
+					.."'><rs class='color'>"
 	local textMessage = toWString(text) or common.GetEmptyWString()
 	local secondPart = "</rs></body>"
-	return ConcatWString(firstPart, textMessage, secondPart)
+	return firstPart..textMessage..secondPart
 end
 
 function toValuedText(text, color, align, fontSize, shadow, outline, fontName)
-	local valuedText=common.CreateValuedText()
-	text=toWString(text)
+	local valuedText = cachedCreateValuedText()
 	if not valuedText or not text then return nil end
-	valuedText:SetFormat(toWString(formatText(text, align, fontSize, shadow, outline, fontName)))
+	valuedText:SetFormat(formatText(text, align, fontSize, shadow, outline, fontName))
 	
 	if color then
 		valuedText:SetClassVal( "color", color )
@@ -144,16 +175,23 @@ function compare(name1, name2)
 	return name1:Compare(name2, true) == 0
 end
 
-function getTimeString(ms)
-	if		ms<1000	then return "0."..tostring(round(ms/100)).."s"
+function initTimeAbbr()	
+	table.insert(cachedTimeAbbr, toStringUtils(getLocale()["s"] or "s"))
+	table.insert(cachedTimeAbbr, toStringUtils(getLocale()["m"] or "m"))
+	table.insert(cachedTimeAbbr, toStringUtils(getLocale()["h"] or "h"))
+	table.insert(cachedTimeAbbr, toStringUtils(getLocale()["d"] or "d"))
+end
+
+function getTimeString(ms, withoutFraction)
+	if		ms<1000 and not withoutFraction	then return "0."..tostring(round(ms/100))..cachedTimeAbbr[1]
 	else   	ms=round(ms/1000) end
-	if		ms<60	then return tostring(ms).."s"
-	else    ms=math.floor(ms/60) end
-	if		ms<60	then return tostring(ms).."m"
+	if		ms<60	then return tostring(ms)..cachedTimeAbbr[1]
 	else    ms=round(ms/60) end
-	if		ms<24	then return tostring(ms).."h"
+	if		ms<60	then return tostring(ms)..cachedTimeAbbr[2]
+	else    ms=round(ms/60) end
+	if		ms<24	then return tostring(ms)..cachedTimeAbbr[3]
 	else    ms=round(ms/24) end
-	return tostring(ms).."d"
+	return tostring(ms)..cachedTimeAbbr[4]
 end
 
 function makeColorMoreGray(aColor)
@@ -254,13 +292,32 @@ function resize(widget, width, height)
 	if widget.SetPlacementPlain then widget:SetPlacementPlain(BarPlace) end
 end
 
-function align(widget, alignX, alingY)
+function align(widget, alignX, alignY)
 	if not widget then return end
 	local BarPlace=widget.GetPlacementPlain and widget:GetPlacementPlain()
 	if not BarPlace then return nil end
 	if alignX then BarPlace.alignX = alignX end
-	if alingY then BarPlace.alignY = alingY end
+	if alignY then BarPlace.alignY = alignY end
 	if widget.SetPlacementPlain then widget:SetPlacementPlain(BarPlace) end
+end
+
+function updatePlacementPlain(widget, alignX, alignY, posX, posY, width, height)
+	if not widget then return end
+	local BarPlace=widget.GetPlacementPlain and widget:GetPlacementPlain()
+	if not BarPlace then return nil end
+	if alignX then BarPlace.alignX = alignX end
+	if alignY then BarPlace.alignY = alignY end
+	if posX then
+		BarPlace.posX = posX
+		BarPlace.highPosX = posX
+	end
+	if posY then
+		BarPlace.posY = posY
+		BarPlace.highPosY = posY
+	end
+	if width then BarPlace.sizeX = width end
+	if height then BarPlace.sizeY = height end
+	widget:SetPlacementPlain(BarPlace)
 end
 
 function priority(widget, priority)
@@ -300,10 +357,17 @@ end
 function setText(widget, text, color, align, fontSize, shadow, outline, fontName)
 	if not widget then return nil end
 	text=toWString(text or "")
-	if widget.SetVal 		then widget:SetVal("button_label", text)  end
-	--if widget.SetTextColor	then widget:SetTextColor("button_label", { a = 1, r = 1, g = 0, b = 0 } ) end --ENUM_ColorType_SHADOW
-	if widget.SetText		then widget:SetText(text) end
-	if widget.SetValuedText then widget:SetValuedText(toValuedText(text, color or "ColorWhite", align, fontSize, shadow, outline, fontName)) end
+	--textview
+	if widget.SetValuedText then 
+		widget:SetValuedText(toValuedText(text, color or "ColorWhite", align, fontSize, shadow, outline, fontName)) 
+	--textedit
+	elseif widget.SetText then		
+		widget:SetText(text)
+	--buttons
+	elseif widget.SetVal then
+		widget:SetVal("button_label", text) 
+		if widget.SetClassVal then widget:SetClassVal( "color", color or "ColorWhite" ) end
+	end
 end
 
 function setBackgroundTexture(widget, texture)
@@ -332,36 +396,27 @@ function getParent(widget, num)
 	return getParent(parent, num-1)
 end
 
-function getForm(widget)
-	if not widget then return nil end
-	if not widget.CreateWidgetByDesc then
-		return getForm(getParent(widget))
-	end
-	return widget
-end
-
-function createWidget(parent, widgetName, templateName, alignX, alignY, width, height, posX, posY, noParent)
+function createWidget(parent, widgetName, templateName, alignX, alignY, width, height, posX, posY)
 	local widget = nil
-	local owner=getForm(parent)
-
 	local desc = getDesc(templateName)
-	if not desc and parent then return nil end
-	widget = owner and owner:CreateWidgetByDesc(desc)
-	if parent and widget and not noParent then parent:AddChild(widget) end
+	if not desc then
+		LogInfo("Not found WidgetDesc of ", templateName)
+		return
+	end
+	
+	widget = parent:CreateChildByDesc(desc)
+
+	if not widget or not widget:IsValid() then
+		LogInfo("Fail create widget type of ", templateName)
+		return
+	end
 	setName(widget, widgetName)
-	align(widget, alignX, alignY)
-	move(widget, posX, posY)
-	resize(widget, width, height)
+	updatePlacementPlain(widget, alignX, alignY, posX, posY, width, height)
 	return widget
 end
 
 function setTemplateWidget(widget)
 	templateWidget=widget
-end
-
-function equals(widget1, widget2)
-	if not widget1 or not widget2 then return nil end
-	return widget1.IsEqual and widget1:IsEqual(widget2) or widget2.IsEqual and widget2:IsEqual(widget1) or nil
 end
 
 function swap(widget)
@@ -384,7 +439,10 @@ end
 function setCheckBox(widget, value)
 	if not widget or not widget.SetVariant or not widget.GetVariantCount then return end
 	if widget:GetVariantCount()<2 then return end
-	if 		value 	then 	widget:SetVariant(1) return end
+	if 	value then 	
+		widget:SetVariant(1) 
+		return 
+	end
 	widget:SetVariant(0)
 end
 
@@ -413,7 +471,7 @@ local template=getChild(mainForm, "Template")
 local timers={}
 local m_loopEffects={}
 
-function timer(params)
+function timerTick(params)
 	if not params.effectType == ET_FADE then return end
 	local timerForTick = nil
 	for _, someTimer in pairs(timers) do
@@ -435,19 +493,21 @@ function startTimer(name, callback, speed, one)
 	setTemplateWidget(template)
 	local timerWidget=createWidget(mainForm, name, "Timer")
 	if not timerWidget or not name or not callback then return nil end
-	timers[name]={}
-	timers[name].callback=callback
-	timers[name].widget=timerWidget
-	timers[name].one=one
-	timers[name].speed=tonumber(speed) or 1
+	local newTimer = {}
+	newTimer.callback=callback
+	newTimer.widget=timerWidget
+	newTimer.one=one
+	newTimer.speed=tonumber(speed) or 1
 
-	common.RegisterEventHandler(timer, "EVENT_EFFECT_FINISHED")
-    timerWidget:PlayFadeEffect(1.0, 1.0, timers[name].speed*1000, EA_MONOTONOUS_INCREASE, true)
+	common.RegisterEventHandler(timerTick, "EVENT_EFFECT_FINISHED")
+    timerWidget:PlayFadeEffect(1.0, 1.0, newTimer.speed*1000, EA_MONOTONOUS_INCREASE, true)
+	
+	timers[name] = newTimer
 	return true
 end
 
 function stopTimer(name)
-    common.UnRegisterEventHandler( timer, "EVENT_EFFECT_FINISHED" )
+    common.UnRegisterEventHandler(timerTick, "EVENT_EFFECT_FINISHED")
 end
 
 function setTimeout(name, speed)
@@ -468,7 +528,7 @@ function effectDone(aParams)
 
 	local findedWdg = nil
 	for _, v in pairs(m_loopEffects) do
-		if v and equals(aParams.wtOwner, v.widget) then
+		if v.widget:IsValid() and aParams.wtOwner:IsEqual(v.widget) then
 			findedWdg = v
 			break
 		end
@@ -482,12 +542,12 @@ end
 
 function startLoopBlink(aWdg, aSpeed)
 	for i, v in pairs(m_loopEffects) do
-		if v and equals(aWdg, v.widget) then
+		if aWdg:IsEqual(v.widget) then
 			v.speed = aSpeed
 			return
 		end
 	end
-	
+
 	local obj = {}
 	obj.widget = aWdg
 	obj.speed = aSpeed
@@ -498,7 +558,7 @@ end
 
 function stopLoopBlink(aWdg)
 	for i, v in pairs(m_loopEffects) do
-		if v and equals(aWdg, v.widget) then
+		if aWdg:IsEqual(v.widget) then
 			table.remove(m_loopEffects, i)
 			break
 		end
@@ -512,14 +572,9 @@ end
 -- Locales functions
 --------------------------------------------------------------------------------
 
-local locale=nil
-
 function setLocaleTextEx(widget, checked, color, align, fontSize, shadow, outline, fontName)
-	if not locale then
-		locale=getLocale()
-	end
 	local name=getName(widget)
-	local text=name and locale[name]
+	local text=name and getLocale()[name]
 	if not text then
 		text = name
 	end
@@ -528,12 +583,13 @@ function setLocaleTextEx(widget, checked, color, align, fontSize, shadow, outlin
 			text=formatText(text, align)
 			setCheckBox(widget, checked)
 		end
+		
 		setText(widget, text, color, align, fontSize, shadow, outline, fontName)
 	end
 end
 
 function setLocaleText(widget, checked)
-	setLocaleTextEx(widget, checked, "ColorWhite",  "left")
+	setLocaleTextEx(widget, checked, "ColorWhite", "left")
 end
 
 --------------------------------------------------------------------------------
@@ -762,110 +818,49 @@ function getAngleToTarget(targetId)
 end
 
 
-function getPersIdToId(pid)
-	if not pid then return nil end
-	if isRaid() then
-		local members=raid.GetMembers()
-		for i, g in pairs(members) do
-			for j, m in pairs(g) do
-				if m and m.id==pid then return m.uniqueId or m.persistentId end
-			end
-		end
-	elseif isGroup() then
-		local members=group.GetMembers()
-		for i, m in pairs(members) do
-			if m and m.id==pid then return m.uniqueId or m.persistentId end
-		end
-	elseif avatar.GetId and avatar.GetId()==pid then
-		return avatar.GetUniqueId and avatar.GetUniqueId() or avatar.GetServerId and avatar.GetServerId()
-	end
-	return pid
-end
-
-function getNameToPersId(pid)
-	if not pid or type(pid)~="userdata" then return nil end
-	if isRaid() then
-		local members=raid.GetMembers()
-		for i, g in pairs(members) do
-			for j, m in pairs(g) do
-				if m and (m.uniqueId and m.uniqueId.IsEqual and m.uniqueId.IsEqual(pid, m.uniqueId) or m.persistentId==pid) then return m.name end
-			end
-		end
-	elseif isGroup() then
-		local members=group.GetMembers()
-		for i, m in pairs(members) do
-			if m and (m.uniqueId and m.uniqueId.IsEqual and m.uniqueId.IsEqual(pid, m.uniqueId) or m.persistentId==pid) then return toStringUtils(m.name) end
-		end
-	end
-	local avatarUniqueId=avatar.GetUniqueId and avatar.GetUniqueId()
-	return (avatarUniqueId and avatarUniqueId.IsEqual and avatarUniqueId.IsEqual(pid, avatarUniqueId) or avatar.GetServerId and avatar.GetServerId()==pid) and avatar.GetId and object.GetName and object.GetName(avatar.GetId()) or nil
-end
-
 function getGroupFromPersId(pid)
 	if not pid or type(pid)~="userdata" then return nil end
-	if isRaid() and pid then
-		local members=raid.GetMembers()
-		if not members then return 0 end
-		local activeGroups=0
-		for i=0, 3 do
-			if members[i] then
-				local activeGroup=false
-				for j, m in pairs(members[i]) do
-					if m and (m.uniqueId and m.uniqueId.IsEqual and m.uniqueId.IsEqual(pid, m.uniqueId) or m.persistentId==pid) then return activeGroups end
-					activeGroup=true
+	if raid.IsExist() then
+		local members = raid.GetMembers()
+		if not members then return 1 end
+		for i, party in ipairs(members) do
+			for _, member in ipairs(party) do
+				if member.uniqueId and member.uniqueId:IsEqual(pid) then
+					return i
 				end
-				if activeGroup then activeGroups=activeGroups+1 end
 			end
 		end
 	end
-	return nil
 end
 
 function getGroupSizeFromPersId(pid)
 	if not pid or type(pid)~="userdata" then return nil end
-	if isRaid() then
+	if raid.IsExist() then
 		local group=nil
-		local members=raid.GetMembers()
+		local members = raid.GetMembers()
 		if not members then return nil end
-		for i=0, 3 do
-			if members[i] then
-				for j, m in pairs(members[i]) do
-					if m and (m.uniqueId and m.uniqueId.IsEqual and m.uniqueId.IsEqual(pid, m.uniqueId) or m.persistentId==pid) then group=i end
+		for _, party in ipairs(members) do
+			for _, member in ipairs(party) do
+				if member.uniqueId and member.uniqueId:IsEqual(pid) then
+					return GetTableSize(party)
 				end
 			end
 		end
-		if not group then return nil end
-
-		local size=0
-		for j, m in pairs(members[group]) do
-			size=size+1
-		end
-		return size
 	end
-	return nil
 end
 
 function getFirstEmptyPartyInRaid()
-	if isRaid() then
-		local members=raid.GetMembers()
+	if raid.IsExist() then
+		local members = raid.GetMembers()
 		if not members then return nil end
-		for i=0, 3 do
-			local active=false
-			if members[i] then
-				for j, m in pairs(members[i]) do
-					active=true
-				end
-			end
-			if not active then return i end
-		end
+		return GetTableSize(members) + 1
 	end
-	return nil
 end
 
 
 
 function getTimestamp()
-	return common.GetMsFromDateTime( common.GetLocalDateTime() )
+	return common.GetLocalDateTimeMs()
 end
 
 Global("g_cachedTimestamp", getTimestamp())
@@ -875,11 +870,14 @@ function updateCachedTimestamp()
 end
 
 function copyTable(t)
-  local result = { }
-  for k, v in pairs( t ) do
-    result[k] = v
-  end
-  return result
+	return table.sclone(t)
+end
+
+function deepCopyTable(t)
+	if type( t ) ~= "table" then return t end
+	local c = {}
+	for i, v in pairs( t ) do c[ i ] = deepCopyTable( v ) end
+	return c
 end
 
 local m_spellTextureCache = {}
@@ -895,10 +893,4 @@ function getSpellTextureFromCache(aSpellID)
 	table.insert(m_spellTextureCache, newSpellTexInfo)
 	
 	return newSpellTexInfo.texture
-end
-
-
-function LogToChat(aMessage)
-	if not cachedIsWString(aMessage) then	aMessage = cachedToWString(aMessage) end
-	userMods.SendSelfChatMessage(aMessage, "notice")
 end

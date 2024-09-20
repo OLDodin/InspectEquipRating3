@@ -6,10 +6,10 @@
   <localizedNameFileRef href="name.txt"/>
   <localizedDescFileRef href="desc.txt"/>
   <ScriptFileRefs>
-    <Item href="/Mods/SampleCommon/SampleAddonBase.lua"/>
-	<Item href="Scripts/Utils.lua"/>
-	<Item href="Scripts/Libs/LibDnD.lua"/>
-	<Item href="Scripts/Libs/LibGS.lua"/>
+    <Item href="Scripts/common/AddonBase.lua"/>
+	<Item href="Scripts/common/Utils.lua"/>
+	<Item href="Scripts/common/LibDnD.lua"/>
+	<Item href="Scripts/LibGS.lua"/>
 	<Item href="Scripts/InspectEquipRating.lua"/>
   </ScriptFileRefs>
   <texturesGroups>
