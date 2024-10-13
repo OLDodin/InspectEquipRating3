@@ -48,7 +48,7 @@ end
 
 function OnTargetChaged(params)
 	local targetID = avatar.GetTarget()
-	if not targetID or not object.IsExist(targetID) or not unit.IsPlayer(targetID) then
+	if not targetID or not object.IsExist(targetID) or not unit.IsPlayer(targetID) or not avatar.IsInspectAllowed() then
 		hide(mainForm)
 	end
 end
@@ -95,19 +95,19 @@ function ShowGearScore(aParams)
 		m_runeTxtWidget:SetClassVal("style1", aParams.runesStyleOffensive or "Goods")
 		m_runeTxtWidget:SetClassVal("style3", aParams.runesStyleDefensive or "Goods")
 	elseif m_currentRuneMode == RUNE_SEPARATED_MODE then
-			m_runeTxtWidget:SetVal("elem1", tostring(aParams.runes[DRESS_SLOT_OFFENSIVERUNE1].runeQuality))
-			m_runeTxtWidget:SetVal("elem3", tostring(aParams.runes[DRESS_SLOT_OFFENSIVERUNE2].runeQuality))
-			m_runeTxtWidget:SetVal("elem5", tostring(aParams.runes[DRESS_SLOT_OFFENSIVERUNE3].runeQuality))
-			m_runeTxtWidget:SetVal("elem7", tostring(aParams.runes[DRESS_SLOT_DEFENSIVERUNE1].runeQuality))
-			m_runeTxtWidget:SetVal("elem9", tostring(aParams.runes[DRESS_SLOT_DEFENSIVERUNE2].runeQuality))
-			m_runeTxtWidget:SetVal("elem11", tostring(aParams.runes[DRESS_SLOT_DEFENSIVERUNE3].runeQuality))
-			
-			m_runeTxtWidget:SetClassVal("style1", aParams.runes[DRESS_SLOT_OFFENSIVERUNE1].runeStyle)
-			m_runeTxtWidget:SetClassVal("style3", aParams.runes[DRESS_SLOT_OFFENSIVERUNE2].runeStyle)
-			m_runeTxtWidget:SetClassVal("style5", aParams.runes[DRESS_SLOT_OFFENSIVERUNE3].runeStyle)
-			m_runeTxtWidget:SetClassVal("style7", aParams.runes[DRESS_SLOT_DEFENSIVERUNE1].runeStyle)
-			m_runeTxtWidget:SetClassVal("style9", aParams.runes[DRESS_SLOT_DEFENSIVERUNE2].runeStyle)
-			m_runeTxtWidget:SetClassVal("style11", aParams.runes[DRESS_SLOT_DEFENSIVERUNE3].runeStyle)
+		m_runeTxtWidget:SetVal("elem1", tostring(aParams.runes[DRESS_SLOT_OFFENSIVERUNE1].runeQuality))
+		m_runeTxtWidget:SetVal("elem3", tostring(aParams.runes[DRESS_SLOT_OFFENSIVERUNE2].runeQuality))
+		m_runeTxtWidget:SetVal("elem5", tostring(aParams.runes[DRESS_SLOT_OFFENSIVERUNE3].runeQuality))
+		m_runeTxtWidget:SetVal("elem7", tostring(aParams.runes[DRESS_SLOT_DEFENSIVERUNE1].runeQuality))
+		m_runeTxtWidget:SetVal("elem9", tostring(aParams.runes[DRESS_SLOT_DEFENSIVERUNE2].runeQuality))
+		m_runeTxtWidget:SetVal("elem11", tostring(aParams.runes[DRESS_SLOT_DEFENSIVERUNE3].runeQuality))
+		
+		m_runeTxtWidget:SetClassVal("style1", aParams.runes[DRESS_SLOT_OFFENSIVERUNE1].runeStyle)
+		m_runeTxtWidget:SetClassVal("style3", aParams.runes[DRESS_SLOT_OFFENSIVERUNE2].runeStyle)
+		m_runeTxtWidget:SetClassVal("style5", aParams.runes[DRESS_SLOT_OFFENSIVERUNE3].runeStyle)
+		m_runeTxtWidget:SetClassVal("style7", aParams.runes[DRESS_SLOT_DEFENSIVERUNE1].runeStyle)
+		m_runeTxtWidget:SetClassVal("style9", aParams.runes[DRESS_SLOT_DEFENSIVERUNE2].runeStyle)
+		m_runeTxtWidget:SetClassVal("style11", aParams.runes[DRESS_SLOT_DEFENSIVERUNE3].runeStyle)
 	elseif m_currentRuneMode == P2P_MODE then
 		
 	end
@@ -153,13 +153,11 @@ function ShowMountHP()
 end
 
 function Init()
-	--common.StateUnloadManagedAddon( "InspectCharacter" )	
-	if GS.Init then GS.Init() end
 	m_template = getChild(mainForm, "Template")
 	setTemplateWidget(m_template)
 	
 	m_myMainForm = mainForm:GetChildChecked("MainPanel", false)
-	DnD:Init(m_myMainForm, m_myMainForm, true)
+	DnD.Init(m_myMainForm, m_myMainForm, true)
 	if common.IsOnPayToPlayShard() then
 		m_currentRuneMode = P2P_MODE
 	elseif IsRuneSeparated() then
@@ -248,8 +246,7 @@ function Init()
 	common.RegisterEventHandler( OnMountHPChanged, "EVENT_UNIT_MOUNT_HEALTH_CHANGED" )
 	
 	GS.Callback = ShowGearScore
-	GS.EnableTargetInspection( true )
-	GS.EnableLiteMode( true )
+	GS.Init(true, false, true)
 end
 
 if (avatar.IsExist()) then

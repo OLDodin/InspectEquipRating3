@@ -1,7 +1,7 @@
 --------------------------------------------------------------------------------
--- LibGS.lua // "Gear Score Library" by hal.dll, version 2017-04-21
+-- LibGS.lua // "Gear Score Library" by hal.dll, version 2024-10-13 (v11)
 -- Created: 2014-08-25
--- Updated: 2024-05-05 by oldodin
+-- Updated: 2024-10-13 by oldodin
 -- Support: https://alloder.pro/topic/1718-libgslua-biblioteka-inspektirovaniya-igrokov/
 --------------------------------------------------------------------------------
 -- PUBLIC VARIABLES
@@ -19,9 +19,12 @@ Global( "GS", {} )
 -- PUBLIC FUNCTIONS
 --------------------------------------------------------------------------------
 --
--- GS.Init ( EnableTargetAutoInspection, SkipInitialTargetInspection )
+-- GS.Init ( EnableTargetAutoInspection, SkipInitialTargetInspection, EnableLiteMode )
 --    Initializes LibGS.
---    The arguments are the same as in GS.EnableTargetInspection
+--    EnableTargetAutoInspection - boolean - enable (true, nil) or disable (false) auto inspection.
+--    SkipInitialTargetInspection - boolean - skip (true) or perform (false, nil) target inspection on addon-reloading.
+--    EnableLiteMode - boolean - By default (false) LibGS is always inspecting current average quality/level/style of unit equipment.
+--    EnableLiteMode - This param is used to disable(true)/enable(false) read quality/level/style of unit equipment. Disable only if all subscribed GS Addons set EnableLiteMode to true
 --    To be called by your addon:
 --        if GS.Init then GS.Init() end
 --
@@ -30,12 +33,6 @@ Global( "GS", {} )
 --    This function is used to disable/enable automatic target inspection.
 --    Enable - boolean - enable (true, nil) or disable (false) auto inspection.
 --    SkipInitial - boolean - skip (true) or perform (false, nil) target inspection on addon-reloading.
---    To be called by your addon.
---
--- GS.EnableLiteMode ( Enable )
---    By default LibGS is always inspecting current average quality/level/style of unit equipment.
---    This function is used to disable/enable read quality/level/style of unit equipment.
---    Enable - boolean - enable (true, nil) or disable (false).
 --    To be called by your addon.
 --
 -- GS.RequestInfo ( unitId )
@@ -92,7 +89,6 @@ Global( "GS", {} )
 -- EVENT_INSPECT_FINISHED
 -- EVENT_ADDON_LOAD_STATE_CHANGED
 -- EVENT_AVATAR_TARGET_CHANGED
--- EVENT_AVATAR_SECONDARY_TARGET_CHANGED
 --------------------------------------------------------------------------------
 -- PRIVATE EVENTS
 --------------------------------------------------------------------------------
@@ -182,7 +178,6 @@ local GS_Once
 local GS_Disabled
 -- Client part data
 local GS_TIEnabled
-local GS_LiteMod
 local GS_Queue
 local GS_QueueN
 -- Negotiations data
@@ -190,7 +185,7 @@ local GS_Addons
 local GS_AddonsN
 local GS_AddonParams
 local GS_MyId
-local GS_MyVersion = 9
+local GS_MyVersion = 11
 local GS_Id_Master
 local GS_Is_Master
 -- Functions
@@ -199,20 +194,28 @@ local GetItemInfo
 local GetItemBonus
 local GetItemQuality
 local GetRuneInfo
-local ItemIsCursed
-local GetGearScore
+
 --------------------------------------------------------------------------------
 -- GEARSCORE INFO HELPERS
 --------------------------------------------------------------------------------
 local function safe_div( S , N )
 	return N > 0 and S / N or 0
 end
-local function GetGearScoreV13( unitId, result )
+local function CanBeOnlyLiteMode()
+	for n, settings in pairs(GS_AddonParams) do
+		if not settings.enableLiteMode then
+			return false
+		end
+	end
+	return true
+end
+local function GetGearScore( unitId, result )
 	local Qs = 0
 	local Qn = 0
 	local Ls = 0
 	local N = 0
-	if not GS_LiteMod then
+	local gsLiteMode = CanBeOnlyLiteMode()
+	if not gsLiteMode then
 		local equip = unit.GetEquipmentItemIds( unitId, ITEM_CONT_EQUIPMENT ) or {}
 		for slot,item in pairs( equip ) do
 			local t = equipmentType[slot]
@@ -242,255 +245,13 @@ local function GetGearScoreV13( unitId, result )
 	local q = result.equipmentQuality
 	result.gearscoreLevel = result.equipmentLevel
 	result.gearscoreQuality = q < 1 and 1 or q > 8 and 8 or q
-	if not GS_LiteMod then
+	if not gsLiteMode then
 		result.gearscoreStyle = QualityStyle[ math.floor(result.gearscoreQuality + 0.3) ]
 	else
 		result.gearscoreStyle = 'Goods'
 	end
 end
-local function GetGearScoreV12( unitId, result )
-	local Qs = 0
-	local Qn = 0
-	local Ls = 0
-	local N = 0
-	if not GS_LiteMod then
-		local equip = unit.GetEquipmentItemIds( unitId, ITEM_CONT_EQUIPMENT ) or {}
-		for slot,item in pairs( equip ) do
-			local info = GetItemInfo( item )
-			local quality = GetItemQuality( item )
-			local t = equipmentType[ info.dressSlot ]
-			if t then
-				Ls = Ls + info.level
-				N = N + 1
-			end
-			if t and quality and quality.quality then 
-				Qs = Qs + equipmentQuality[quality.quality]
-				Qn = Qn + 1
-			end
-		end
-	end
-	if unitId == avatar.GetId() then
-		local gs = avatar.GetGearScoreInfo()
-		result.gearscore = gs and gs.currentValue or 0
-	else
-		result.gearscore = unit.GetGearScore( unitId )
-	end
-	result.equipmentLevel = safe_div( Ls , N )
-	result.equipmentQuality = safe_div( Qs , Qn )
-	result.equipmentStyle = QualityStyle[ math.floor(result.equipmentQuality + 0.3) ]
-	local q = result.equipmentQuality
-	local delta = result.equipmentLevel - unit.GetLevel(unitId)
-	if delta >= 4 then q = q + 0.36 elseif delta <= -3 then q = q - 0.9 end
-	result.gearscoreLevel = result.equipmentLevel
-	result.gearscoreQuality = q < 1 and 1 or q > 8 and 8 or q
-	if not GS_LiteMod then
-		result.gearscoreStyle = QualityStyle[ math.floor(result.gearscoreQuality + 0.3) ]
-	else
-		result.gearscoreStyle = 'Goods'
-	end
-end
-local function GetGearScoreV7( unitId, result )
-	local equip = unit.GetEquipmentItemIds( unitId, ITEM_CONT_EQUIPMENT ) or {}
-	local Qs = 0
-	local Qn = 0
-	local Ls = 0
-	local N = 0
-	for slot,item in pairs( equip ) do
-		local info = GetItemInfo( item )
-		local quality = GetItemQuality( item )
-		local t = equipmentType[ info.dressSlot ]
-		if t then
-			Ls = Ls + info.level
-			N = N + 1
-		end
-		if t and quality and quality.quality then 
-			Qs = Qs + equipmentQuality[quality.quality]
-			Qn = Qn + 1
-		end
-	end
-	if unitId == avatar.GetId() then
-		local gs = avatar.GetGearScoreInfo()
-		result.gearscore = gs and gs.currentValue or 0
-	else
-		result.gearscore = unit.GetGearScore( unitId )
-	end
-	result.equipmentLevel = safe_div( Ls , N )
-	result.equipmentQuality = safe_div( Qs , Qn )
-	result.equipmentStyle = QualityStyle[ math.floor(result.equipmentQuality + 0.3) ]
-	local q = result.equipmentQuality
-	local delta = result.equipmentLevel - unit.GetLevel(unitId)
-	if delta >= 4 then q = q + 0.36 elseif delta <= -3 then q = q - 0.9 end
-	result.gearscoreLevel = result.equipmentLevel
-	result.gearscoreQuality = q < 1 and 1 or q > 8 and 8 or q
-	result.gearscoreStyle = QualityStyle[ math.floor(result.gearscoreQuality + 0.3) ]
-end
-local function GetGearScoreV6( unitId, result )
-	local equip = unit.GetEquipmentItemIds( unitId, ITEM_CONT_EQUIPMENT ) or {}
-	local Qs = 0
-	local Qn = 0
-	local Ls = 0
-	local N = 0
-	for slot,item in pairs( equip ) do
-		local info = GetItemInfo( item )
-		local quality = GetItemQuality( item )
-		local t = equipmentType[ info.dressSlot ]
-		if t then
-			Ls = Ls + info.level
-			N = N + 1
-		end
-		if t and quality and quality.quality then 
-			Qs = Qs + equipmentQuality[quality.quality]
-			Qn = Qn + 1
-		end
-	end
-	result.gearscore = unit.GetGearScore( unitId )
-	result.equipmentLevel = safe_div( Ls , N )
-	result.equipmentQuality = safe_div( Qs , Qn )
-	result.equipmentStyle = QualityStyle[ math.floor(result.equipmentQuality + 0.3) ]
-	local q = result.equipmentQuality
-	local delta = result.equipmentLevel - unit.GetLevel(unitId)
-	if delta >= 2 then q = q + 0.67 elseif delta <= -3 then q = q - 0.9 end
-	result.gearscoreLevel = result.equipmentLevel
-	result.gearscoreQuality = q < 1 and 1 or q > 8 and 8 or q
-	result.gearscoreStyle = QualityStyle[ math.floor(result.gearscoreQuality + 0.3) ]
-end
-local function GetGearScoreV5( unitId, result )
-	local equip = unit.GetEquipmentItemIds( unitId, ITEM_CONT_EQUIPMENT ) or {}
-	local statsB = { [ Clothing ] = 0, [ Weapon ] = 0 }
-	local statsA = { [ Clothing ] = 0, [ Weapon ] = 0 }
-	local statsD = { [ Clothing ] = 0, [ Weapon ] = 0 }
-	local Qs = 0
-	local Qn = 0
-	local Ls = 0
-	local N = 0
-	for slot,item in pairs( equip ) do
-		local info = GetItemInfo( item )
-		local bonus = GetItemBonus( item )
-		local quality = GetItemQuality( item )
-		local t = equipmentType[ info.dressSlot ]
-		if t then
-			Ls = Ls + info.level
-			N = N + 1
-		end
-		if t and bonus and not itemLib.IsCursed( item ) then
-			local db = bonus.miscStats.power.effective + bonus.miscStats.stamina.effective
-			local da = 0
-			for i = 0, 8 do
-				da = da + bonus.innateStats[i].effective
-			end
-			statsB[ t ] = statsB[ t ] + db
-			statsA[ t ] = statsA[ t ] + da
-		end
-		if t and quality and quality.quality then 
-			Qs = Qs + equipmentQuality[quality.quality]
-			Qn = Qn + 1
-		end
-	end
-	local dragon = unit.GetEquipmentItemIds( unitId, ITEM_CONT_EQUIPMENT_RITUAL ) or {}
-	for slot,item in pairs( dragon ) do
-		local info = GetItemInfo( item )
-		local t = equipmentType[ info.dressSlot ]
-		local bonus = GetItemBonus( item )
-		if t and bonus and not itemLib.IsCursed( item ) then
-			local dd = bonus.miscStats.stamina.effective
-			statsD[ t ] = statsD[ t ] + dd
-		end
-	end
-	result.gearscore = (statsB[ Clothing ] + 4 * statsB[ Weapon ]) * (1 + 0.005 * (statsA[ Clothing ] + statsA[ Weapon ])) + 1.12 * (statsD[ Clothing ] + 4 * statsD[ Weapon ])
-	result.equipmentLevel = safe_div( Ls , N )
-	result.equipmentQuality = safe_div( Qs , Qn )
-	result.equipmentStyle = QualityStyle[ math.floor(result.equipmentQuality + 0.3) ]
-	local q = result.equipmentQuality
-	local delta = result.equipmentLevel - unit.GetLevel(unitId)
-	if delta >= 2 then q = q + 0.67 elseif delta <= -3 then q = q - 1 end
-	result.gearscoreLevel = result.equipmentLevel
-	result.gearscoreQuality = q < 1 and 1 or q > 8 and 8 or q
-	result.gearscoreStyle = QualityStyle[ math.floor(result.gearscoreQuality + 0.3) ]
-end
-local function GetGearScoreV4( unitId, result )
-	local mult = {
-			[ INNATE_STAT_STRENGTH ]    = 4,  -- + Сила
-			[ INNATE_STAT_MIGHT ]       = 4,  -- + Точность
-			[ INNATE_STAT_DEXTERITY ]   = 4,  -- + Ловкость
-			[ INNATE_STAT_AGILITY ]     = 1,  -- + Проворство
-			[ INNATE_STAT_STAMINA ]     = 1,  -- + Выносливость
-			[ INNATE_STAT_PRECISION ]   = 4,  -- + Удача
-			[ INNATE_STAT_HARDINESS ]   = 1,  -- + Инстинкт
-			[ INNATE_STAT_INTELLECT ]   = 4,  -- + Разум
-			[ INNATE_STAT_INTUITION ]   = 4,  -- + Интуиция
-			[ INNATE_STAT_SPIRIT ]      = 4,  -- + Дух
-			[ INNATE_STAT_WILL ]        = 1,  -- + Упорство
-			[ INNATE_STAT_RESOLVE ]     = 1,  -- + Воля
-			[ INNATE_STAT_WISDOM ]      = 0,  -- + Мудрость
-			[ INNATE_STAT_LETHALITY ]   = 1,  -- + Ярость
-		}
-	local gear = 0
-	local Qs = 0
-	local Qn = 0
-	local Ls = 0
-	local N = 0
-	local equip = unit.GetEquipmentItemIds( unitId, ITEM_CONT_EQUIPMENT ) or {}
-	for slot,item in pairs( equip ) do
-		local info = GetItemInfo( item )
-		local bonus = GetItemBonus( item )
-		local quality = GetItemQuality( item )
-		local t = equipmentType[ info.dressSlot ]
-		if t then
-			Ls = Ls + info.level
-			N = N + 1
-		end
-		if t and bonus and bonus.innateStats and not itemLib.IsCursed( item ) then
-			local db = 0
-			if t == Weapon then
-				for u,p in pairs(bonus.innateStats) do
-					if p.effective > 0 then
-						db = db + p.effective * mult[u]
-					end
-				end
-			else
-				for u,p in pairs(bonus.innateStats) do
-					if p.effective > 0 then
-						db = db + p.effective
-					end
-				end
-			end
-			gear = gear + db
-		end
-		if t and quality and quality.quality then 
-			Qs = Qs + equipmentQuality[quality.quality]
-			Qn = Qn + 1
-		end
-	end
-	local ritual = unit.GetEquipmentItemIds( unitId, ITEM_CONT_EQUIPMENT_RITUAL ) or {}
-	for slot,item in pairs( ritual or {} ) do
-		local info = GetItemInfo( item )
-		local t = equipmentType[ info.dressSlot ]
-		local bonus = GetItemBonus( item )
-		if t and bonus and bonus.innateStats and not itemLib.IsCursed( item ) then
-			local dd = 0
-			if t == Weapon then
-				for u,p in pairs(bonus.innateStats) do
-					if p.effective > 0 then
-						dd = dd + p.effective * mult[u]
-					end
-				end
-			else
-				-- 45 lvl equipment gives 6 points, 51 - 9 points, 55 - 12 points
-				dd = ( info.level == 45 and 6 ) or
-				     ( info.level == 51 and 9 ) or
-					 ( info.level == 55 and 12) or 0
-			end
-			gear = gear + dd
-		end
-	end
-	result.gearscore = gear
-	result.equipmentLevel = safe_div( Ls , N )
-	result.equipmentQuality = safe_div( Qs , Qn )
-	result.equipmentStyle = QualityStyle[ math.floor(result.equipmentQuality + 0.3) ]
-	result.gearscoreLevel = result.equipmentLevel
-	result.gearscoreQuality = result.equipmentQuality
-	result.gearscoreStyle = QualityStyle[ math.floor(result.gearscoreQuality + 0.3) ]
-end
+
 local function GetRunes( unitId, result )
 	local Bs = { [ Offensive ] = 0, [ Defensive ] = 0 }
 	local Rs = { [ Offensive ] = 0, [ Defensive ] = 0 }
@@ -548,9 +309,6 @@ local function GetArtifacts( unitId, result )
 	result.artefactLvl1 = 0
 	result.artefactLvl2 = 0
 	result.artefactLvl3 = 0
-	if not guildHallLib then -- less AO 11.0.??
-		return
-	end
 
 	result.artefactLvl1 = GetArtifactLvlBySlot(unitId, DRESS_SLOT_ARTIFACT1)
 	result.artefactLvl2 = GetArtifactLvlBySlot(unitId, DRESS_SLOT_ARTIFACT2)
@@ -595,14 +353,21 @@ end
 --                           -> StartUnit
 -- Client: OnGearScoreAvailable -> remove from queue, GS.Callback
 local function DropQueue()
+	local avatarId = avatar.GetId()
+	for i = GS_MasterQueueN, 1, -1 do
+		if GS_MasterQueue[i] == avatarId then
+			local Info = GetFullInfo(avatarId, {})
+			userMods.SendEvent( "LIBGS_GEARSCORE_AVAILABLE", Info )
+			break
+		end
+	end
 	GS_MasterQueue, GS_MasterQueueN = nil, nil
 end
 local function OnSecondTimer( params )
 	GS_Timer = GS_Timer + 1
 	-- 2-3 seconds timeout for event
 	if GS_Timer >= GS_InspectionTimeout or GS_Once then
-		local func = common.UnRegisterEventHandler
-		func( OnSecondTimer, "EVENT_SECOND_TIMER" )
+		common.UnRegisterEventHandler( OnSecondTimer, "EVENT_SECOND_TIMER" )
 		GS_Timer = nil
 		GS_Disabled = not GS_Once
 		GS_ProbedZone = GS_Zone
@@ -632,8 +397,7 @@ local function StartUnit( unitId )
 	GS_Busy = true -- GS_Busy - protector of current inspection cycle, and for GS_Requester
 	if not GS_Once and not GS_Disabled and not GS_Timer then
 		-- Wait for event timeout
-		local func = common.RegisterEventHandler
-		func( OnSecondTimer, "EVENT_SECOND_TIMER" )
+		common.RegisterEventHandler( OnSecondTimer, "EVENT_SECOND_TIMER" )
 		GS_Timer = 0
 	end
 	avatar.StartInspect( unitId )
@@ -650,7 +414,7 @@ local function ProcessQueue()
 		GS_Disabled = false
 		GS_ProbedZone = GS_Zone
 	end
-	if avatar.IsInspectAllowed and not avatar.IsInspectAllowed() then
+	if not avatar.IsInspectAllowed() then
 		GS_Disabled = true
 	end
 -- | avatar.IsTargetInspected() | GS_Busy | Meaning
@@ -828,7 +592,7 @@ local function ChangeMaster( Master )
 		end
 		GS_Is_Master = Enable
 		if Enable then
-			GS_Busy = avatar.IsExist() and (avatar.IsInspectAllowed == nil or avatar.IsInspectAllowed()) and avatar.IsTargetInspected()
+			GS_Busy = avatar.IsExist() and avatar.IsInspectAllowed() and avatar.IsTargetInspected()
 			-- Ensure current zone ID is updated
 			GS_Zone = (cartographer.GetCurrentZoneInfo() or { zonesMapId = -1 }).zonesMapId
 			GS_ProbedZone = -2
@@ -861,7 +625,7 @@ local function OnAddonLoadStateChanged( params )
 				ChangeMaster(m)
 				if GS_Is_Master and not GS_AddonParams[GS_MyId].resending then
 					GS_AddonParams[GS_MyId].resending = true
-					userMods.SendEvent( "LIBGS_PRESENT", { from = GS_MyId, version = GS_MyVersion, resending = true } )
+					userMods.SendEvent( "LIBGS_PRESENT", { from = GS_MyId, version = GS_MyVersion, resending = true, enableLiteMode = GS_AddonParams[GS_MyId].enableLiteMode } )
 				end
 			end
 			-- Master has lost his queue, resending
@@ -887,7 +651,7 @@ local function OnLibraryLoaded( params )
 	params.version = params.version or 0
 	table.insert(GS_Addons, params.from)
 	GS_AddonsN = GS_AddonsN + 1
-	GS_AddonParams[params.from] = { version = params.version }
+	GS_AddonParams[params.from] = { version = params.version, enableLiteMode = params.enableLiteMode }
 	if not GS_Id_Master then
 		-- We just (re-)loaded. Send all collected in queue to master. Likely, it's empty.
 		ResendQueue(GS_Queue, GS_QueueN)
@@ -897,41 +661,21 @@ local function OnLibraryLoaded( params )
 	end
 	if GS_Is_Master and params.from ~= GS_MyId and not GS_AddonParams[GS_MyId].resending then
 		GS_AddonParams[GS_MyId].resending = true
-		userMods.SendEvent( "LIBGS_PRESENT", { from = GS_MyId, version = GS_MyVersion, resending = true } )
+		userMods.SendEvent( "LIBGS_PRESENT", { from = GS_MyId, version = GS_MyVersion, resending = true, enableLiteMode = GS_AddonParams[GS_MyId].enableLiteMode } )
 	end
 end
 --------------------------------------------------------------------------------
 -- PUBLIC FUNCTIONS
 --------------------------------------------------------------------------------
-function GS.Init( EnableTargetAutoInspection, SkipInitialTargetInspection )
+function GS.Init( EnableTargetAutoInspection, SkipInitialTargetInspection, EnableLiteMode )
 	if not GS.Init then return end
 	GS.Init = nil
 	
-	if avatar.GetGearScoreInfo then -- AO 7.0.??+
-		GetGearScore = GetGearScoreV13
-	elseif unit.GetGearScore then -- AO 6.0.00+
-		GetGearScore = GetGearScoreV6
-	elseif avatar.GetPower then -- AO 5.0.00+
-		GetGearScore = GetGearScoreV5
-	elseif raid.IsAutomatic then -- AO 4.0.00+
-		GetGearScore = GetGearScoreV4
-	else
-		common.LogWarning( "common", "AO versions 1.x, 2.0.x, 3.0.x are not supported yet" )
-		return
-	end
-	GetGearScoreV4 = nil
-	GetGearScoreV5 = nil
-	GetGearScoreV6 = nil
-	GetGearScoreV7 = nil
-	GetGearScoreV12 = nil
-	GetGearScoreV13 = nil
-	local haveItemLib = rawget( _G, "itemLib" ) ~= nil
-	GetItemInfo = haveItemLib and itemLib.GetItemInfo or avatar.GetItemInfo
-	GetItemBonus = haveItemLib and itemLib.GetBonus or avatar.GetItemBonus
-	GetItemQuality = haveItemLib and itemLib.GetQuality or avatar.GetItemInfo
-	GetRuneInfo = haveItemLib and itemLib.GetRuneInfo or function ( itemId ) return itemId and (avatar.GetItemInfo(itemId) or {}).runeInfo end
-	ItemIsCursed = haveItemLib and itemLib.IsCursed or function ( itemId ) return itemId and (avatar.GetItemInfo(itemId) or {}).isCursed end
-	UnitIsFriend = object.IsFriend or unit.IsFriend
+	GetItemInfo = itemLib.GetItemInfo
+	GetItemBonus = itemLib.GetBonus
+	GetItemQuality = itemLib.GetQuality
+	GetRuneInfo = itemLib.GetRuneInfo
+	UnitIsFriend = object.IsFriend
 	common.RegisterEventHandler( OnGearScoreAvailable, "LIBGS_GEARSCORE_AVAILABLE" )
 	-- Start Negotiations
 	local info = common.GetAddonInfo() or {}
@@ -940,7 +684,7 @@ function GS.Init( EnableTargetAutoInspection, SkipInitialTargetInspection )
 	if not GS_Addons then GS_Addons, GS_AddonParams, GS_AddonsN = {}, {}, 0 end
 	common.RegisterEventHandler( OnLibraryLoaded, "LIBGS_PRESENT" )
 	common.RegisterEventHandler( OnAddonLoadStateChanged, "EVENT_ADDON_LOAD_STATE_CHANGED" )
-	userMods.SendEvent( "LIBGS_PRESENT", { from = GS_MyId, version = GS_MyVersion, initial = true } )
+	userMods.SendEvent( "LIBGS_PRESENT", { from = GS_MyId, version = GS_MyVersion, initial = true, enableLiteMode = EnableLiteMode } )
 	GS_TIEnabled = false
 	GS.EnableTargetInspection( EnableTargetAutoInspection, SkipInitialTargetInspection )
 end
@@ -950,15 +694,11 @@ function GS.EnableTargetInspection( Enable, SkipInitial )
 	if GS_TIEnabled ~= Enable then
 		local func = Enable and common.RegisterEventHandler or common.UnRegisterEventHandler
 		func( OnTargetChanged, "EVENT_AVATAR_TARGET_CHANGED" )
-		func( OnTargetChanged, "EVENT_AVATAR_SECONDARY_TARGET_CHANGED" )
 		GS_TIEnabled = Enable
 		if Enable and not SkipInitial and avatar.IsExist() then
 			OnTargetChanged()
 		end
 	end
-end
-function GS.EnableLiteMode( Enable )
-	GS_LiteMod = Enable
 end
 function GS.RequestInfo( unitId )
 	if GS.Init then GS.Init() end
