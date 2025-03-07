@@ -171,6 +171,12 @@ function Init()
 	m_exoTxtWidget = createWidget(m_myMainForm, "exoHeader", "TextView", nil, nil, 70, 25, 158, 9)
 	m_artTxtWidget = createWidget(m_myMainForm, "artHeader", "TextView", nil, nil, 70, 25, 70, 9)
 	
+	priority(m_runeTxtWidget, 1)
+	priority(m_gsTxtWidget, 1)
+	priority(m_fairyTxtWidget, 1)
+	priority(m_exoTxtWidget, 1)
+	priority(m_artTxtWidget, 1)
+	
 	hide(mainForm)
 	
 	if IsBigInetrace() then
