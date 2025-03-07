@@ -3,7 +3,6 @@ local RUNE_SEPARATED_MODE = 2
 local RUNE_AVERAGE_MODE = 3
 
 local m_myMainForm = nil
-local m_template = nil
 local m_runeTxtWidget = nil
 local m_gsTxtWidget = nil
 local m_fairyTxtWidget = nil
@@ -153,8 +152,7 @@ function ShowMountHP()
 end
 
 function Init()
-	m_template = getChild(mainForm, "Template")
-	setTemplateWidget(m_template)
+	setTemplateWidget("common")
 	
 	m_myMainForm = mainForm:GetChildChecked("MainPanel", false)
 	DnD.Init(m_myMainForm, m_myMainForm, true)

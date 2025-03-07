@@ -1,22 +1,28 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <UIAddon>
-  <AutoStart>true</AutoStart>
-  <Form href="Widgets/MainForm.(WidgetForm).xdb#xpointer(/WidgetForm)"/>
-  <Name>InspectEquipRating3</Name>
-  <localizedNameFileRef href="name.txt"/>
-  <localizedDescFileRef href="desc.txt"/>
-  <ScriptFileRefs>
-    <Item href="Scripts/common/AddonBase.lua"/>
+	<AutoStart>true</AutoStart>
+	<Form href="Widgets/MainForm.(WidgetForm).xdb#xpointer(/WidgetForm)"/>
+	<Name>InspectEquipRating3</Name>
+	<localizedNameFileRef href="name.txt"/>
+	<localizedDescFileRef href="desc.txt"/>
+	<ScriptFileRefs>
+	<Item href="Scripts/common/AddonBase.lua"/>
 	<Item href="Scripts/common/Utils.lua"/>
 	<Item href="Scripts/common/LibDnD.lua"/>
 	<Item href="Scripts/LibGS.lua"/>
 	<Item href="Scripts/InspectEquipRating.lua"/>
-  </ScriptFileRefs>
-  <texturesGroups>
+	</ScriptFileRefs>
+	<texturesGroups>
 		<Item>
 			<groupName>common</groupName>
-			<textures href="Widgets/Textures/Textures.xdb"/>
+			<textures href="Widgets/Resources/Textures/Textures.xdb"/>
 		</Item>
-  </texturesGroups>
-  <author>OLDodin</author>
+	</texturesGroups>
+	<widgetGroups>
+		<Item>
+			<groupName>common</groupName>
+			<widgets href="Widgets/Resources/common/WidgetTemplates.xdb" />
+		</Item>
+	</widgetGroups>
+	<author>OLDodin</author>
 <addon_name>InspectEquipRating3</addon_name></UIAddon>

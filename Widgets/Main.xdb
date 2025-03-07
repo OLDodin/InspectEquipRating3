@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8" ?>
-<WidgetPanel>
-	<Name>Template</Name>
-	<Children>
-		<Item href="TextView.xdb#xpointer(/WidgetTextView)" />
-		<Item href="Timer.xdb#xpointer(/WidgetPanel)" />
-	</Children>
-	<PickChildrenOnly>true</PickChildrenOnly>
-</WidgetPanel>

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<UIRelatedWidgets>
+	<items>
+		<Item>
+			<name>TextView</name>
+			<widget href="TextView.xdb" />
+		</Item>
+		<Item>
+			<name>Timer</name>
+			<widget href="Timer.xdb" />
+		</Item>
+	</items>
+</UIRelatedWidgets>
+
