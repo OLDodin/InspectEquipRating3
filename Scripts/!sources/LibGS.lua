@@ -1,7 +1,7 @@
 --------------------------------------------------------------------------------
--- LibGS.lua // "Gear Score Library" by hal.dll, version 2024-10-13 (v11)
+-- LibGS.lua // "Gear Score Library" by hal.dll, version 2025-04-05 (v11)
 -- Created: 2014-08-25
--- Updated: 2024-10-13 by oldodin
+-- Updated: 2025-04-05 by oldodin
 -- Support: https://alloder.pro/topic/1718-libgslua-biblioteka-inspektirovaniya-igrokov/
 --------------------------------------------------------------------------------
 -- PUBLIC VARIABLES
@@ -678,9 +678,8 @@ function GS.Init( EnableTargetAutoInspection, SkipInitialTargetInspection, Enabl
 	UnitIsFriend = object.IsFriend
 	common.RegisterEventHandler( OnGearScoreAvailable, "LIBGS_GEARSCORE_AVAILABLE" )
 	-- Start Negotiations
-	local info = common.GetAddonInfo() or {}
 	GS_Is_Master = false
-	GS_MyId = info and info.sysFullName or "UserAddon/"..common.GetAddonName()
+	GS_MyId = common.GetAddonSysName()
 	if not GS_Addons then GS_Addons, GS_AddonParams, GS_AddonsN = {}, {}, 0 end
 	common.RegisterEventHandler( OnLibraryLoaded, "LIBGS_PRESENT" )
 	common.RegisterEventHandler( OnAddonLoadStateChanged, "EVENT_ADDON_LOAD_STATE_CHANGED" )
