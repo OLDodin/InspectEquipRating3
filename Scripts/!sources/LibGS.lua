@@ -185,7 +185,7 @@ local GS_Addons
 local GS_AddonsN
 local GS_AddonParams
 local GS_MyId
-local GS_MyVersion = 11
+local GS_MyVersion = 12
 local GS_Id_Master
 local GS_Is_Master
 -- Functions
@@ -606,9 +606,11 @@ local function ChangeMaster( Master )
 	end
 end
 local function OnAddonLoadStateChanged( params )
-	if params.unloading then
+	local masterReloaded = params.name == GS_Id_Master and params.state == ADDON_STATE_LOADED
+	
+	if params.state == ADDON_STATE_NOT_LOADED or masterReloaded then
 		if params.name == GS_Id_Master then
-			if not params.loading then
+			if params.state == ADDON_STATE_NOT_LOADED then
 				-- Master has been unloaded (not reloaded)
 				local v, m
 				for i = GS_AddonsN, 1, -1 do
