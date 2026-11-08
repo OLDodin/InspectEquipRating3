@@ -1,7 +1,7 @@
 --------------------------------------------------------------------------------
--- LibGS.lua // "Gear Score Library" by hal.dll, version 2025-04-05 (v11)
+-- LibGS.lua // "Gear Score Library" by hal.dll, version 2026-11-08 (v11)
 -- Created: 2014-08-25
--- Updated: 2025-04-05 by oldodin
+-- Updated: 2026-11-08 by oldodin
 -- Support: https://alloder.pro/topic/1718-libgslua-biblioteka-inspektirovaniya-igrokov/
 --------------------------------------------------------------------------------
 -- PUBLIC VARIABLES
@@ -185,7 +185,7 @@ local GS_Addons
 local GS_AddonsN
 local GS_AddonParams
 local GS_MyId
-local GS_MyVersion = 12
+local GS_MyVersion = 13
 local GS_Id_Master
 local GS_Is_Master
 -- Functions
@@ -357,7 +357,7 @@ local function DropQueue()
 	for i = GS_MasterQueueN, 1, -1 do
 		if GS_MasterQueue[i] == avatarId then
 			local Info = GetFullInfo(avatarId, {})
-			userMods.SendEvent( "LIBGS_GEARSCORE_AVAILABLE", Info )
+			common.SendEvent( "LIBGS_GEARSCORE_AVAILABLE", Info )
 			break
 		end
 	end
@@ -404,7 +404,7 @@ local function StartUnit( unitId )
 end
 local function ScheduleQueue( initial )
 	-- Allow short "delay" between inspection cycles, less freezes
-	userMods.SendEvent( "LIBGS_PING", { initial = initial } )
+	common.SendEvent( "LIBGS_PING", { initial = initial } )
 end
 local function ProcessQueue()
 	if not GS_MasterQueue then return end
@@ -442,7 +442,7 @@ local function ProcessQueue()
 				break
 			elseif unitId == avatar.GetId() then
 				local Info = GetFullInfo(unitId)
-				userMods.SendEvent( "LIBGS_GEARSCORE_AVAILABLE", Info )
+				common.SendEvent( "LIBGS_GEARSCORE_AVAILABLE", Info )
 			elseif object.IsExist( unitId ) then
 				StartUnit( unitId )
 				break
@@ -522,7 +522,7 @@ local function OnInspectFinished()
 		end
 	end
 	if GS_Requester and not GS_Completed then
-		userMods.SendEvent( "LIBGS_GEARSCORE_AVAILABLE", GS_Info )
+		common.SendEvent( "LIBGS_GEARSCORE_AVAILABLE", GS_Info )
 		GS_Completed = true
 	end
 	GS_Requester = false
@@ -549,7 +549,7 @@ local function RequestInfo( unitId )
 	GS_QueueN = GS_QueueN + 1
 	if GS_Id_Master then
 		-- Not sending until first master has appeared
-		userMods.SendEvent( "LIBGS_REQUEST", { from = GS_MyId, unitId = unitId } )
+		common.SendEvent( "LIBGS_REQUEST", { from = GS_MyId, unitId = unitId } )
 	end
 	return true
 end
@@ -575,7 +575,7 @@ end
 --------------------------------------------------------------------------------
 local function ResendQueue( Queue, N )
 	if Queue and N > 0 then
-		userMods.SendEvent( "LIBGS_REQUEST", { Queue = Queue, N = N } )
+		common.SendEvent( "LIBGS_REQUEST", { Queue = Queue, N = N } )
 	end
 end
 local function ChangeMaster( Master )
@@ -627,7 +627,7 @@ local function OnAddonLoadStateChanged( params )
 				ChangeMaster(m)
 				if GS_Is_Master and not GS_AddonParams[GS_MyId].resending then
 					GS_AddonParams[GS_MyId].resending = true
-					userMods.SendEvent( "LIBGS_PRESENT", { from = GS_MyId, version = GS_MyVersion, resending = true, enableLiteMode = GS_AddonParams[GS_MyId].enableLiteMode } )
+					common.SendEvent( "LIBGS_PRESENT", { from = GS_MyId, version = GS_MyVersion, resending = true, enableLiteMode = GS_AddonParams[GS_MyId].enableLiteMode } )
 				end
 			end
 			-- Master has lost his queue, resending
@@ -663,7 +663,7 @@ local function OnLibraryLoaded( params )
 	end
 	if GS_Is_Master and params.from ~= GS_MyId and not GS_AddonParams[GS_MyId].resending then
 		GS_AddonParams[GS_MyId].resending = true
-		userMods.SendEvent( "LIBGS_PRESENT", { from = GS_MyId, version = GS_MyVersion, resending = true, enableLiteMode = GS_AddonParams[GS_MyId].enableLiteMode } )
+		common.SendEvent( "LIBGS_PRESENT", { from = GS_MyId, version = GS_MyVersion, resending = true, enableLiteMode = GS_AddonParams[GS_MyId].enableLiteMode } )
 	end
 end
 --------------------------------------------------------------------------------
@@ -685,7 +685,7 @@ function GS.Init( EnableTargetAutoInspection, SkipInitialTargetInspection, Enabl
 	if not GS_Addons then GS_Addons, GS_AddonParams, GS_AddonsN = {}, {}, 0 end
 	common.RegisterEventHandler( OnLibraryLoaded, "LIBGS_PRESENT" )
 	common.RegisterEventHandler( OnAddonLoadStateChanged, "EVENT_ADDON_LOAD_STATE_CHANGED" )
-	userMods.SendEvent( "LIBGS_PRESENT", { from = GS_MyId, version = GS_MyVersion, initial = true, enableLiteMode = EnableLiteMode } )
+	common.SendEvent( "LIBGS_PRESENT", { from = GS_MyId, version = GS_MyVersion, initial = true, enableLiteMode = EnableLiteMode } )
 	GS_TIEnabled = false
 	GS.EnableTargetInspection( EnableTargetAutoInspection, SkipInitialTargetInspection )
 end
